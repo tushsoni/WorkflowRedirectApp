@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZipForecast - Carbon Copy Final</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: #06193d;
+            --sidebar-width: 60px;
+            --sidebar-expanded: 220px;
+            --header-height: 50px;
+            --accent-teal: #147a81;
+            --floating-teal: #26c2ad;
+            --border-color: #e0e6ed;
+            --text-main: #333;
+            --bg-light: #f4f7f9;
+            --btn-green: #5cd6a5;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-light);
+            height: 100%;
+            overflow: hidden;
+            color: var(--text-main);
+        }
+
+        /* --- Header --- */
+        header {
+            height: var(--header-height);
+            background-color: var(--primary-bg);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            z-index: 1000;
+            position: relative;
+        }
+
+        .header-left, .header-right { display: flex; align-items: center; gap: 20px; }
+        .app-logo { height: 28px; }
+        
+        .header-nav-group { display: flex; align-items: center; gap: 15px; }
+        .header-icon-item { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; }
+        .header-icon-item svg { width: 18px; height: 18px; fill: white; }
+
+        .header-center {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .location-badge {
+            background: #fff;
+            color: #333;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--primary-bg);
+            height: calc(100vh - var(--header-height));
+            position: absolute; left: 0; top: var(--header-height);
+            transition: width 0.2s ease;
+            z-index: 998;
+            overflow: hidden;
+        }
+
+        .sidebar:hover { width: var(--sidebar-expanded); }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            height: 50px;
+            padding: 0 18px;
+            color: #b1bccd;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .menu-item svg {
+            min-width: 24px;
+            width: 24px;
+            height: 24px;
+            margin-right: 20px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.5;
+        }
+
+        .menu-item.active {
+            background-color: var(--accent-teal);
+            color: white;
+            border-left: 4px solid #33f0ff;
+        }
+
+        .menu-item:hover:not(.active) { background-color: rgba(255,255,255,0.05); }
+
+        /* --- Floating Action Buttons (Bottom Left) --- */
+        .floating-actions {
+            position: absolute;
+            bottom: 20px;
+            left: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 1001;
+        }
+
+        .fab {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background-color: var(--floating-teal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: 0.2s;
+        }
+        .fab svg { width: 22px; height: 22px; fill: white; }
+
+        /* --- Main Content --- */
+        .main-container {
+            margin-left: var(--sidebar-width);
+            height: calc(100vh - var(--header-height));
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        /* Forecast Title Strip */
+        .forecast-title-strip {
+            background-color: white;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            color: #147a81;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        /* Date Picker UI from Screenshot */
+        .date-navigator {
+            display: flex;
+            align-items: center;
+            border: 1px solid #d1d9e2;
+            border-radius: 20px;
+            background: white;
+            overflow: hidden;
+        }
+
+        .date-nav-btn {
+            border: none;
+            background: none;
+            padding: 5px 12px;
+            cursor: pointer;
+            color: #147a81;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .date-nav-btn:first-child { border-right: 1px solid #d1d9e2; }
+        .date-nav-btn:last-child { border-left: 1px solid #d1d9e2; }
+
+        .date-display {
+            padding: 0 10px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #333;
+        }
+
+        /* Centered Sales Dropdown */
+        .center-dropdown {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .center-dropdown select {
+            padding: 6px 12px;
+            border: 1px solid #d1d9e2;
+            border-radius: 4px;
+            width: 180px;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .btn-workflow {
+            background: linear-gradient(135deg, #147a81 0%, #0d5c61 100%);
+            color: white;
+            border: none;
+            padding: 7px 15px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            transition: 0.2s;
+            margin-right: 15px;
+        }
+
+        /* --- Table Styling --- */
+        .content-area { padding: 15px; }
+        .forecast-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            font-size: 12px;
+            table-layout: fixed;
+            margin-bottom: 5px;
+        }
+
+        .forecast-table th, .forecast-table td {
+            border: 1px solid var(--border-color);
+            padding: 10px 8px;
+            text-align: left;
+        }
+
+        .forecast-table th {
+            background: #f8f9fa;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .row-label { background: #fcfcfc; font-weight: 500; width: 170px; }
+        .weather-box { text-align: center; color: #666; }
+        .weather-icon { font-size: 22px; display: block; margin-bottom: 2px; }
+
+        /* Input Styling */
+        .input-group {
+            display: flex;
+            align-items: center;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            overflow: hidden;
+            background: white;
+        }
+        .input-group span { background: #f8f9fa; padding: 2px 5px; color: #888; border-right: 1px solid #ddd; }
+        .input-group input { border: none; width: 100%; padding: 4px; font-size: 12px; outline: none; }
+
+        .perc-box { display: inline-block; border: 1px solid #ddd; padding: 4px; width: 25px; text-align: center; background: #f9f9f9; }
+        .info-i {
+            display: inline-flex; background: #000; color: #fff; width: 14px; height: 14px;
+            border-radius: 50%; font-size: 10px; align-items: center; justify-content: center;
+            margin-left: 6px; cursor: help;
+        }
+
+        .weekly-cell { font-weight: bold; text-align: center; }
+
+        /* Hourly Forecast Section */
+        .hourly-header {
+            background: #fff;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 5px;
+        }
+
+        .btn-update {
+            background-color: var(--btn-green);
+            color: white;
+            border: none;
+            padding: 6px 20px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <img src="https://agcdn.altametrics.com/hw_prod_others/common/images/app_icon/zipForecast.svg" class="app-logo">
+            <div class="header-nav-group">
+                <div class="header-icon-item">
+                    <svg viewBox="0 0 24 24"><path d="M3 3h7v7H3V3zm11 0h7v7h-7V3zm-11 11h7v7H3v-7zm11 0h7v7h-7v-7z" fill="currentColor"/></svg>
+                    <span>My App ▾</span>
+                </div>
+                <div class="header-icon-item">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z" fill="currentColor"/></svg>
+                    <span>Site 1 ▾</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="header-center">
+    <div style="display: flex; align-items: center; gap: 5px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M17.5 19c2.49 0 4.5-2.01 4.5-4.5 0-2.34-1.79-4.27-4.07-4.49C16.95 5.95 14.7 4 12 4 9.46 4 7.24 5.65 6.69 8a2 2 0 0 0-.69-.05C4.01 7.95 2 9.96 2 12.5S4.01 17 6.5 17h11zM15 5l.5-1M12 3V2M9 5l-.5-1"/>
+        </svg>
+        <span style="color: #26c2ad; font-size: 10px; margin-top: 2px;">▼</span>
+    </div>
+    <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.4); margin: 0 5px;"></div>
+    <span>01:22<sup style="font-size: 10px;">P</sup> America/New York</span>
+</div>
+
+        <div class="header-right">
+            <div class="location-badge">🏪 Corporate Head ▾</div>
+            <div class="header-icon-item">⚙️</div>
+            <div class="header-icon-item">👤</div>
+        </div>
+    </header>
+
+    <div class="sidebar">
+        <div class="menu-item active">
+            <svg viewBox="0 0 24 24"><path d="M17.5 19c.7 0 1.2-.5 1.2-1.2V9.8L12 5.5l-6.7 4.3v8c0 .7.5 1.2 1.2 1.2h11zM12 2L2 8.3v10.5c0 1.2.9 2.2 2.1 2.2h15.8c1.2 0 2.1-1 2.1-2.2V8.3L12 2z"/></svg>
+            <span>Forecasts</span>
+        </div>
+        <div class="menu-item">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8l1.5 3h3.5l-2.5 2.5 1 3.5-3.5-2-3.5 2 1-3.5L7 11h3.5L12 8z"/></svg>
+            <span>Actual Sales</span>
+        </div>
+        <div class="menu-item">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
+            <span>Events</span>
+        </div>
+        <div class="menu-item">
+            <svg viewBox="0 0 24 24"><path d="M12 12c2.2 0 4-1.8 4-4s-1.8-4-4-4-4 1.8-4 4 1.8 4 4 4zm0 2c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4z"/></svg>
+            <span>Employees</span>
+        </div>
+        <div class="menu-item" onclick="openWorkflow()">
+            <svg viewBox="0 0 24 24"><path d="M12 2v4m0 12v4M4.9 4.9l2.8 2.8m8.6 8.6l2.8 2.8M2 12h4m12 0h4M4.9 19.1l2.8-2.8m8.6-8.6l2.8-2.8"/></svg>
+            <span>Workflow</span>
+        </div>
+    </div>
+
+    <div class="floating-actions">
+        <div class="fab">
+            <svg viewBox="0 0 24 24"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6.3 6.3 9 1.7 4.4C.6 6.8 1 9.8 3 11.8c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.4-.4.4-1.1 0-1.5z"/></svg>
+        </div>
+        <div class="fab">
+            <svg viewBox="0 0 24 24"><path d="M12 1a9 9 0 0 0-9 9v7a3 3 0 0 0 3 3h3v-8H5v-2a7 7 0 0 1 14 0v2h-4v8h3a3 3 0 0 0 3-3v-7a9 9 0 0 0-9-9z"/></svg>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="forecast-title-strip">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M17.5 18c2.49 0 4.5-2.01 4.5-4.5 0-2.34-1.79-4.27-4.07-4.49C16.95 5.95 14.7 4 12 4 9.46 4 7.24 5.65 6.69 8a2 2 0 0 0-.69-.05C4.01 7.95 2 9.96 2 12.5S4.01 17 6.5 17h11z"/></svg>
+            Forecasts
+        </div>
+
+        <div class="toolbar">
+            <div class="date-navigator">
+                <button class="date-nav-btn">‹</button>
+                <div class="date-display">
+                    📅 01/04/2026 <span style="font-size: 10px; color: var(--accent-teal);">▾</span>
+                </div>
+                <button class="date-nav-btn">›</button>
+            </div>
+
+            <div class="center-dropdown">
+                <select>
+                    <option>Sales</option>
+                </select>
+            </div>
+
+            <div style="display: flex; align-items: center;">
+                <button class="btn-workflow" onclick="openWorkflow()">
+                    <svg width="12" height="12" fill="white" viewBox="0 0 24 24"><path d="M21 11H6.8l3.9-3.9L9.3 5.7 3 12l6.3 6.3 1.4-1.4L6.8 13H21v-2z"/></svg>
+                    Back to Workflow
+                </button>
+                <div style="border: 1px solid #ccc; border-radius: 20px; padding: 2px 10px; display: flex; align-items: center; gap: 5px; background: white; cursor: pointer;">
+                    <span style="font-size: 14px; opacity:0.6;">🔧</span>
+                    <span style="color: var(--accent-teal); font-size: 10px;">▼</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <table class="forecast-table">
+                <thead>
+                    <tr>
+                        <th class="row-label">Forecast</th>
+                        <th>SUN 04 📌</th>
+                        <th>MON 05 📌</th>
+                        <th>TUE 06 📌</th>
+                        <th>WED 07 📌</th>
+                        <th>THU 08 📌</th>
+                        <th>FRI 09 📌</th>
+                        <th>SAT 10 📌</th>
+                        <th>Weekly Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="row-label">Weather</td>
+                        <td class="weather-box"><span class="weather-icon">⛅</span>N/A</td>
+                        <td class="weather-box"><span class="weather-icon">⛅</span>N/A</td>
+                        <td class="weather-box"><span class="weather-icon">⛅</span>N/A</td>
+                        <td class="weather-box"><span class="weather-icon">⛅</span>N/A</td>
+                        <td class="weather-box"><span class="weather-icon">⛅</span>N/A</td>
+                        <td class="weather-box"><span class="weather-icon">⛅</span>N/A</td>
+                        <td class="weather-box"><span class="weather-icon">⛅</span>N/A</td>
+                        <td class="weekly-cell">-</td>
+                    </tr>
+                    <tr>
+                        <td class="row-label">My Forecast</td>
+                        <td>$ 2509.91</td><td>$ 5500.02</td><td>$ 2050.55</td>
+                        <td><div class="input-group"><span>$</span><input type="text" value="5522.03"></div></td>
+                        <td><div class="input-group"><span>$</span><input type="text" value="3999.93"></div></td>
+                        <td><div class="input-group"><span>$</span><input type="text" value="3200.13"></div></td>
+                        <td><div class="input-group"><span>$</span><input type="text" value="3499.9"></div></td>
+                        <td class="weekly-cell">$ 26282.47</td>
+                    </tr>
+                    <tr>
+                        <td class="row-label">Increase/Decrease</td>
+                        <td>0 %</td><td>0 %</td><td>0 %</td>
+                        <td><input type="text" style="width:30px;" value="0"> <span class="perc-box">%</span></td>
+                        <td><input type="text" style="width:30px;" value="0"> <span class="perc-box">%</span></td>
+                        <td><input type="text" style="width:30px;" value="0"> <span class="perc-box">%</span></td>
+                        <td><input type="text" style="width:30px;" value="0"> <span class="perc-box">%</span></td>
+                        <td class="weekly-cell">0 %</td>
+                    </tr>
+                    <tr>
+                        <td class="row-label">Forecast Adjustment</td>
+                        <td>0 %</td><td>0 %</td><td>0 %</td><td>0 %</td><td>0 %</td><td>0 %</td><td>0 %</td>
+                        <td class="weekly-cell">0 %</td>
+                    </tr>
+                    <tr>
+                        <td class="row-label">Base Forecast</td>
+                        <td>$ 2509.91 <span class="info-i">i</span></td>
+                        <td>$ 5500.02 <span class="info-i">i</span></td>
+                        <td>$ 2050.55 <span class="info-i">i</span></td>
+                        <td>$ 5522.03 <span class="info-i">i</span></td>
+                        <td>$ 3999.93 <span class="info-i">i</span></td>
+                        <td>$ 3200.13 <span class="info-i">i</span></td>
+                        <td>$ 3499.9 <span class="info-i">i</span></td>
+                        <td class="weekly-cell">$ 26282.47</td>
+                    </tr>
+                    <tr>
+                        <td class="row-label">Current Week Actual Sales</td>
+                        <td>$ 0</td><td>$ 8069.72</td><td>$ 0</td><td>$ 0</td><td>$ 0</td><td>$ 0</td><td>$ 0</td>
+                        <td class="weekly-cell">$ 8069.72</td>
+                    </tr>
+                    <tr>
+                        <td class="row-label">Last Week Actual Sales</td>
+                        <td>$ 0</td><td>$ 265.2</td><td>$ 0</td><td>$ 0</td><td>$ 0</td><td>$ 0</td><td>$ 0</td>
+                        <td class="weekly-cell">$ 265.2</td>
+                    </tr>
+                    <tr>
+                        <td class="row-label">Event</td>
+                        <td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td>
+                        <td class="weekly-cell"></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="hourly-header">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:16px; cursor:pointer;">⊖</span>
+                    <span style="font-weight:500;">Hide Hourly Forecast</span>
+                </div>
+                <button class="btn-update">Update</button>
+            </div>
+
+            <table class="forecast-table">
+                <tbody>
+                    <tr>
+                        <td class="row-label">12:00a-1:00a</td>
+                        <td><div class="input-group"><span>$</span><input type="text" placeholder="0"></div></td>
+                        <td><div class="input-group"><span>$</span><input type="text" placeholder="0"></div></td>
+                        <td><div class="input-group"><span>$</span><input type="text" placeholder="0"></div></td>
+                        <td><div class="input-group"><span>$</span><input type="text" placeholder="0"></div></td>
+                        <td><div class="input-group"><span>$</span><input type="text" placeholder="0"></div></td>
+                        <td><div class="input-group"><span>$</span><input type="text" placeholder="0"></div></td>
+                        <td><div class="input-group"><span>$</span><input type="text" placeholder="0"></div></td>
+                        <td class="weekly-cell">$0</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function openWorkflow() {
+            window.open('https://tushsoni.github.io/Workflow/', '_blank');
+        }
+    </script>
+</body>
+</html>
